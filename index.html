@@ -171,6 +171,7 @@
         const btnRefresh = document.getElementById('btn-refresh');
         const btnLogout = document.getElementById('btn-logout');
         
+        // عناصر الإضافة
         const newSellCurrency = document.getElementById('new-sell-currency');
         const newBuyCurrency = document.getElementById('new-buy-currency');
         const newDescGold = document.getElementById('new-desc-gold');
@@ -180,9 +181,7 @@
         const btnAddGold = document.getElementById('btn-add-gold');
         const newCodeCurrency = document.getElementById('new-code-currency');
         const newNameCurrency = document.getElementById('new-name-currency');
-        const newUnitCurrency = document.getElementById('new-unit-currency');
         const newPurityGold = document.getElementById('new-purity-gold');
-        const newUnitGold = document.getElementById('new-unit-gold');
 
         let accessToken = localStorage.getItem('supabase_access_token');
         let userEmail = localStorage.getItem('supabase_user_email');
@@ -197,7 +196,8 @@
             if(window.lucide) window.lucide.createIcons();
         }
         
-        async function signIn(email,password){
+        // دالة تسجيل الدخول (محدثة لحفظ refresh_token)
+        async function signIn(email, password){
             authMsg.textContent = 'جاري التحقق...';
             btnLogin.disabled = true;
 
@@ -212,8 +212,14 @@
                 if (data?.access_token){
                     accessToken = data.access_token;
                     userEmail = email;
+                    
+                    // حفظ التوكن ومفتاح التحديث (Refresh Token)
                     localStorage.setItem('supabase_access_token', accessToken);
+                    if(data.refresh_token) {
+                        localStorage.setItem('supabase_refresh_token', data.refresh_token);
+                    }
                     localStorage.setItem('supabase_user_email', userEmail);
+                    
                     authMsg.textContent = '';
                     setLoggedInUI(userEmail);
                     await loadAll();
@@ -222,8 +228,40 @@
                 }
             } catch (err) {
                 authMsg.textContent = 'خطأ في الاتصال';
+                console.error(err);
             } finally {
                 btnLogin.disabled = false;
+            }
+        }
+
+        // دالة تجديد الجلسة تلقائياً
+        async function refreshSession() {
+            const refreshToken = localStorage.getItem('supabase_refresh_token');
+            if (!refreshToken) return false;
+
+            try {
+                const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+                    method: 'POST',
+                    headers: { 'apikey': ANON_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_token: refreshToken })
+                });
+                
+                const data = await res.json();
+                
+                if (data?.access_token) {
+                    accessToken = data.access_token;
+                    localStorage.setItem('supabase_access_token', accessToken);
+                    if (data.refresh_token) {
+                        localStorage.setItem('supabase_refresh_token', data.refresh_token);
+                    }
+                    return true;
+                } else {
+                    console.log('Session expired');
+                    return false;
+                }
+            } catch (e) {
+                console.error('Failed to refresh token', e);
+                return false;
             }
         }
         
@@ -234,11 +272,10 @@
             return Math.round(sellPrice * (1 - ratio));
         }
 
-        // Auto-Calc for new currency
+        // Auto-Calc
         newSellCurrency.addEventListener('input', () => {
             newBuyCurrency.value = calculateBuyPrice(parseFloat(newSellCurrency.value)) || '';
         });
-        // Auto-Calc for new gold
         newSellGold.addEventListener('input', () => {
             newBuyGold.value = calculateBuyPrice(parseFloat(newSellGold.value), newDescGold.value) || '';
         });
@@ -291,31 +328,29 @@
                     method: 'PATCH',
                     headers: { 
                         'apikey': ANON_KEY, 
-                        'Authorization': getAuthHeader(), // استخدام وظيفة getAuthHeader لضمان التوكن الصحيح
+                        'Authorization': getAuthHeader(),
                         'Content-Type': 'application/json' 
                     },
                     body: JSON.stringify({ buy_price: row.buy_price, sell_price: row.sell_price })
                 });
 
                 if (response.ok) {
-                    btn.textContent = 'تم الحفظ بنجاح!';
+                    btn.textContent = 'تم الحفظ!';
                     btn.classList.remove('bg-brand-primary', 'text-brand-dark');
                     btn.classList.add('bg-green-500', 'text-white');
-                    // لا تقم باستدعاء loadAll() هنا مباشرة، فقط بعد فترة زمنية
-                    // أو انتظر حتى يقوم المستخدم بالتحديث بنفسه أو بعد عملية الحفظ الجماعي
                 } else {
                     const errorData = await response.json();
-                    alert('فشل الحفظ. قد تكون هناك مشكلة في صلاحيات الحساب. ' + JSON.stringify(errorData));
+                    alert('فشل الحفظ.');
                     btn.textContent = 'فشل الحفظ';
                     btn.classList.remove('bg-brand-primary', 'text-brand-dark');
                     btn.classList.add('bg-red-500', 'text-white');
                 }
             } catch(e) { 
-                alert('خطأ في الاتصال بالخادم.');
-                btn.textContent = 'خطأ في الاتصال';
+                alert('خطأ في الاتصال.');
+                btn.textContent = 'خطأ';
             } finally {
                 btn.disabled = false;
-                setTimeout(loadAll, 1500); // تحديث بعد 1.5 ثانية لرؤية نتيجة الحفظ بشكل أوضح
+                setTimeout(loadAll, 1500);
             }
         }
 
@@ -330,7 +365,7 @@
             } catch(e) { alert('فشل الحذف'); }
         }
 
-        // --- توليد الكروت (تصميم تفاعلي) ---
+        // --- توليد الكروت ---
         function createCardHTML(row, type) {
             const table = type === 'currency' ? TABLE_CURRENCY : TABLE_GOLD;
             const title = type === 'currency' ? row.name : row.description;
@@ -382,7 +417,6 @@
         }
 
         function attachInteractions(container, cacheSource) {
-            // منطق تحديث الشراء التلقائي عند تغيير المبيع
             container.querySelectorAll('input[data-field="sell_price"]').forEach(input => {
                 input.addEventListener('input', (e) => {
                     const id = e.target.dataset.id;
@@ -402,7 +436,6 @@
                 });
             });
 
-            // السماح بالتعديل اليدوي على حقل الشراء
             container.querySelectorAll('input[data-field="buy_price"]').forEach(input => {
                 input.addEventListener('input', (e) => {
                     const id = e.target.dataset.id;
@@ -426,12 +459,14 @@
             if(window.lucide) window.lucide.createIcons();
         }
 
-        // --- المبادلات والتشغيل ---
+        // --- المبادلات والأزرار ---
         btnLogin.addEventListener('click', () => signIn(emailIn.value.trim(), passIn.value));
         
         btnGuest.addEventListener('click', () => {
-            accessToken = null; // نضمن أن الزائر ليس لديه توكن
+            accessToken = null;
             localStorage.removeItem('supabase_access_token');
+            localStorage.removeItem('supabase_refresh_token');
+            localStorage.removeItem('supabase_user_email');
             loginBox.classList.add('hidden');
             mainUI.classList.remove('hidden');
             whoami.textContent = "وضع الزائر (للقراءة فقط)";
@@ -439,20 +474,23 @@
         });
 
         btnAddCurrency.addEventListener('click', async () => {
-             const body = { code: newCodeCurrency.value.trim(), name: newNameCurrency.value.trim(), unit: newUnitCurrency.value.trim() || '1', buy_price: parseFloat(newBuyCurrency.value) || 0, sell_price: parseFloat(newSellCurrency.value) || 0 };
+             const body = { code: newCodeCurrency.value.trim(), name: newNameCurrency.value.trim(), unit: '1', buy_price: parseFloat(newBuyCurrency.value) || 0, sell_price: parseFloat(newSellCurrency.value) || 0 };
              await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_CURRENCY}`, { method: 'POST', headers: { 'apikey': ANON_KEY, 'Authorization': getAuthHeader(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
              loadAll();
         });
 
         btnAddGold.addEventListener('click', async () => {
-            const body = { purity: parseInt(newPurityGold.value) || 0, description: newDescGold.value.trim(), unit: newUnitGold.value.trim() || 'gram', buy_price: parseFloat(newBuyGold.value) || 0, sell_price: parseFloat(newSellGold.value) || 0 };
+            const body = { purity: parseInt(newPurityGold.value) || 0, description: newDescGold.value.trim(), unit: 'gram', buy_price: parseFloat(newBuyGold.value) || 0, sell_price: parseFloat(newSellGold.value) || 0 };
             await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_GOLD}`, { method: 'POST', headers: { 'apikey': ANON_KEY, 'Authorization': getAuthHeader(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             loadAll();
         });
 
         btnRefresh.addEventListener('click', loadAll);
+        
+        // تسجيل الخروج (مسح كل شيء)
         btnLogout.addEventListener('click', () => { 
             localStorage.removeItem('supabase_access_token'); 
+            localStorage.removeItem('supabase_refresh_token'); 
             localStorage.removeItem('supabase_user_email'); 
             location.reload(); 
         });
@@ -470,13 +508,33 @@
             });
         });
 
-        if (accessToken) {
-            setLoggedInUI(userEmail);
-            loadAll();
-        } else {
-            // للتأكد من ظهور الأيقونات في صفحة الدخول حتى لو لم يكن هناك توكن
-             if(window.lucide) window.lucide.createIcons();
-        }
+        // --- بدء تشغيل التطبيق (مع محاولة استعادة الجلسة) ---
+        (async function initApp() {
+            if (window.lucide) window.lucide.createIcons();
+            
+            // هل توجد بيانات دخول محفوظة؟
+            if (accessToken && userEmail) {
+                // نحاول تجديد التوكن للتأكد من صلاحيته
+                const isValid = await refreshSession();
+                
+                if (isValid) {
+                    setLoggedInUI(userEmail);
+                    await loadAll();
+                } else {
+                    // التوكن منتهي الصلاحية ولا يمكن تجديده
+                    localStorage.removeItem('supabase_access_token');
+                    localStorage.removeItem('supabase_refresh_token');
+                    localStorage.removeItem('supabase_user_email');
+                    accessToken = null;
+                    loginBox.classList.remove('hidden');
+                    mainUI.classList.add('hidden');
+                }
+            } else {
+                // لا يوجد دخول سابق
+                loginBox.classList.remove('hidden');
+                mainUI.classList.add('hidden');
+            }
+        })();
     </script>
 </body>
 </html>
