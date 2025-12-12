@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>إدارة الليرة 24 - النظام الذكي</title>
+    <title>إدارة الليرة 24 - النظام الذكي (المطور)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -17,7 +17,6 @@
         }
         .num-en { font-family: monospace; direction: ltr; display: inline-block; }
         
-        /* تأثيرات حركية احترافية */
         .glass-effect {
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
@@ -29,10 +28,20 @@
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* تمييز خانة المبيع */
         .sell-input-prominent {
             border: 2px solid #ef4444 !important;
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+        }
+        
+        /* تنسيق زر التبديل الجديد */
+        .mode-toggle-active {
+            background-color: #2ed06e;
+            color: #0a1d00;
+            font-weight: 800;
+        }
+        .mode-toggle-inactive {
+            background-color: #f3f4f6;
+            color: #9ca3af;
         }
     </style>
     
@@ -196,7 +205,6 @@
             if(window.lucide) window.lucide.createIcons();
         }
         
-        // دالة تسجيل الدخول (محدثة لحفظ refresh_token)
         async function signIn(email, password){
             authMsg.textContent = 'جاري التحقق...';
             btnLogin.disabled = true;
@@ -212,14 +220,11 @@
                 if (data?.access_token){
                     accessToken = data.access_token;
                     userEmail = email;
-                    
-                    // حفظ التوكن ومفتاح التحديث (Refresh Token)
                     localStorage.setItem('supabase_access_token', accessToken);
                     if(data.refresh_token) {
                         localStorage.setItem('supabase_refresh_token', data.refresh_token);
                     }
                     localStorage.setItem('supabase_user_email', userEmail);
-                    
                     authMsg.textContent = '';
                     setLoggedInUI(userEmail);
                     await loadAll();
@@ -234,7 +239,6 @@
             }
         }
 
-        // دالة تجديد الجلسة تلقائياً
         async function refreshSession() {
             const refreshToken = localStorage.getItem('supabase_refresh_token');
             if (!refreshToken) return false;
@@ -256,28 +260,40 @@
                     }
                     return true;
                 } else {
-                    console.log('Session expired');
                     return false;
                 }
             } catch (e) {
-                console.error('Failed to refresh token', e);
+                console.error(e);
                 return false;
             }
         }
         
-        /* ========== LOGIC: Calculation ========== */
-        function calculateBuyPrice(sellPrice, description = '') {
+        /* ========== LOGIC: Calculation (المحدثة) ========== */
+        // دالة الحساب المرنة الجديدة
+        function calculateBuyPrice(sellPrice, mode, margin) {
             if (!sellPrice || isNaN(sellPrice)) return 0;
-            const ratio = description.includes('أونصة الذهب العالمية') ? 0.0012 : 0.006;
-            return Math.round(sellPrice * (1 - ratio));
+            let result = 0;
+            
+            if (mode === 'fixed') {
+                // وضع الرقم الثابت: السعر = المبيع - الهامش الثابت
+                result = sellPrice - margin;
+            } else {
+                // وضع النسبة المئوية: السعر = المبيع * (1 - النسبة)
+                // النسبة هنا تكون كرقم عشري، مثلا 0.006
+                result = sellPrice * (1 - margin);
+            }
+            
+            return Math.round(result);
         }
 
-        // Auto-Calc
+        // الحساب المبدئي عند الإضافة (يستخدم الافتراضيات القديمة)
         newSellCurrency.addEventListener('input', () => {
-            newBuyCurrency.value = calculateBuyPrice(parseFloat(newSellCurrency.value)) || '';
+            newBuyCurrency.value = calculateBuyPrice(parseFloat(newSellCurrency.value), 'percent', 0.006) || '';
         });
         newSellGold.addEventListener('input', () => {
-            newBuyGold.value = calculateBuyPrice(parseFloat(newSellGold.value), newDescGold.value) || '';
+            const isOunce = newDescGold.value.includes('أونصة');
+            const ratio = isOunce ? 0.0012 : 0.006;
+            newBuyGold.value = calculateBuyPrice(parseFloat(newSellGold.value), 'percent', ratio) || '';
         });
 
         /* ========== LOGIC: Data Handling ========== */
@@ -296,12 +312,23 @@
                 cacheCurrency = await rCur.json();
                 cacheGold = await rGold.json();
 
+                // تعيين القيم الافتراضية إذا كانت الأعمدة الجديدة فارغة (للتوافق القديم)
+                cacheCurrency.forEach(r => { 
+                    if(!r.calc_mode) r.calc_mode = 'percent'; 
+                    if(r.calc_margin === undefined || r.calc_margin === null) r.calc_margin = 0.006; 
+                });
+                cacheGold.forEach(r => { 
+                    if(!r.calc_mode) r.calc_mode = 'percent'; 
+                    if(r.calc_margin === undefined || r.calc_margin === null) r.calc_margin = (r.description && r.description.includes('أونصة')) ? 0.0012 : 0.006; 
+                });
+
                 renderCurrency();
                 renderGold();
 
             } catch(e) {
                 statusDiv.textContent = 'خطأ في جلب البيانات';
                 statusDiv.className = "bg-red-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black";
+                console.error(e);
                 return;
             }
 
@@ -324,6 +351,14 @@
             btn.disabled = true;
 
             try {
+                // نرسل أيضاً إعدادات الحساب الجديدة
+                const body = { 
+                    buy_price: row.buy_price, 
+                    sell_price: row.sell_price,
+                    calc_mode: row.calc_mode,
+                    calc_margin: row.calc_margin
+                };
+
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
                     method: 'PATCH',
                     headers: { 
@@ -331,7 +366,7 @@
                         'Authorization': getAuthHeader(),
                         'Content-Type': 'application/json' 
                     },
-                    body: JSON.stringify({ buy_price: row.buy_price, sell_price: row.sell_price })
+                    body: JSON.stringify(body)
                 });
 
                 if (response.ok) {
@@ -340,7 +375,8 @@
                     btn.classList.add('bg-green-500', 'text-white');
                 } else {
                     const errorData = await response.json();
-                    alert('فشل الحفظ.');
+                    console.error(errorData);
+                    alert('فشل الحفظ. تأكد من تحديث قاعدة البيانات.');
                     btn.textContent = 'فشل الحفظ';
                     btn.classList.remove('bg-brand-primary', 'text-brand-dark');
                     btn.classList.add('bg-red-500', 'text-white');
@@ -365,11 +401,16 @@
             } catch(e) { alert('فشل الحذف'); }
         }
 
-        // --- توليد الكروت ---
+        // --- توليد الكروت (مع لوحة التحكم الجديدة) ---
         function createCardHTML(row, type) {
             const table = type === 'currency' ? TABLE_CURRENCY : TABLE_GOLD;
             const title = type === 'currency' ? row.name : row.description;
             const subtitle = type === 'currency' ? row.code : `عيار ${row.purity}`;
+            
+            // تحديد حالة الأزرار
+            const isFixed = row.calc_mode === 'fixed';
+            const fixedClass = isFixed ? 'mode-toggle-active' : 'mode-toggle-inactive';
+            const percentClass = !isFixed ? 'mode-toggle-active' : 'mode-toggle-inactive';
             
             return `
                 <div class="bg-white rounded-[2.2rem] p-5 shadow-sm border border-gray-100 hover:shadow-xl transition-all fade-in relative overflow-hidden group">
@@ -389,6 +430,18 @@
                             <label class="text-[10px] font-black text-red-400 mr-4 mb-1 block">سعر المبيع (الأساسي)</label>
                             <input data-id="${row.id}" data-field="sell_price" value="${row.sell_price}" type="number" 
                                 class="sell-input-prominent w-full bg-red-50/30 p-5 rounded-2xl text-2xl font-black text-red-600 outline-none transition-all num-en border-none ring-2 ring-red-100 focus:ring-red-500">
+                        </div>
+
+                        <div class="bg-gray-50 rounded-xl p-2 flex items-center justify-between gap-2 border border-gray-100">
+                            <div class="flex bg-gray-200/50 p-1 rounded-lg">
+                                <button data-id="${row.id}" data-mode="percent" class="mode-btn px-3 py-1 rounded-md text-[10px] transition-all ${percentClass}">% نسبة</button>
+                                <button data-id="${row.id}" data-mode="fixed" class="mode-btn px-3 py-1 rounded-md text-[10px] transition-all ${fixedClass}"># رقم ثابت</button>
+                            </div>
+                            <div class="flex items-center gap-2 flex-1 justify-end">
+                                <label class="text-[9px] text-gray-400 font-bold">قيمة الفرق:</label>
+                                <input data-id="${row.id}" data-field="calc_margin" type="number" step="0.0001" value="${row.calc_margin}" 
+                                    class="w-20 bg-white p-1.5 rounded-lg text-xs font-bold text-center text-gray-600 border border-gray-200 outline-none focus:border-brand-primary num-en">
+                            </div>
                         </div>
 
                         <div class="relative">
@@ -416,26 +469,72 @@
             attachInteractions(ratesBodyGold, cacheGold);
         }
 
+        // --- التعامل مع التفاعلات (تحديث القيم الحية) ---
         function attachInteractions(container, cacheSource) {
+            
+            // دالة مساعدة لتحديث السعر وزر الحفظ
+            const updateRowCalculation = (id) => {
+                const row = cacheSource.find(r => r.id == id);
+                if(row) {
+                    row.buy_price = calculateBuyPrice(row.sell_price, row.calc_mode, row.calc_margin);
+                    
+                    const buyInp = container.querySelector(`input[data-id="${id}"][data-field="buy_price"]`);
+                    if(buyInp) buyInp.value = row.buy_price;
+                    
+                    const btn = container.querySelector(`button[data-id="${id}"][data-act="save"]`);
+                    btn.classList.add('bg-brand-primary', 'text-brand-dark');
+                    btn.textContent = "تحديث الآن";
+                }
+            };
+
+            // 1. تغيير سعر المبيع
             container.querySelectorAll('input[data-field="sell_price"]').forEach(input => {
                 input.addEventListener('input', (e) => {
                     const id = e.target.dataset.id;
                     const row = cacheSource.find(r => r.id == id);
                     if (row) {
                         row.sell_price = parseFloat(e.target.value) || 0;
-                        const desc = row.description || row.name || '';
-                        row.buy_price = calculateBuyPrice(row.sell_price, desc);
-                        
-                        const buyInp = container.querySelector(`input[data-id="${id}"][data-field="buy_price"]`);
-                        if(buyInp) buyInp.value = row.buy_price;
-                        
-                        const btn = container.querySelector(`button[data-id="${id}"][data-act="save"]`);
-                        btn.classList.add('bg-brand-primary', 'text-brand-dark');
-                        btn.textContent = "تحديث الآن";
+                        updateRowCalculation(id);
                     }
                 });
             });
 
+            // 2. تغيير نمط الفرق (نسبة / ثابت)
+            container.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.dataset.id;
+                    const mode = e.target.dataset.mode; // 'percent' or 'fixed'
+                    const row = cacheSource.find(r => r.id == id);
+                    
+                    if(row) {
+                        row.calc_mode = mode;
+                        // تحديث شكل الأزرار
+                        const parent = e.target.closest('div');
+                        parent.querySelectorAll('.mode-btn').forEach(b => {
+                            b.classList.remove('mode-toggle-active');
+                            b.classList.add('mode-toggle-inactive');
+                        });
+                        e.target.classList.remove('mode-toggle-inactive');
+                        e.target.classList.add('mode-toggle-active');
+                        
+                        updateRowCalculation(id);
+                    }
+                });
+            });
+
+            // 3. تغيير قيمة الهامش يدوياً
+            container.querySelectorAll('input[data-field="calc_margin"]').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const id = e.target.dataset.id;
+                    const row = cacheSource.find(r => r.id == id);
+                    if (row) {
+                        row.calc_margin = parseFloat(e.target.value) || 0;
+                        updateRowCalculation(id);
+                    }
+                });
+            });
+
+            // 4. تعديل سعر الشراء يدوياً (يكسر المعادلة مؤقتاً حتى التحديث القادم)
             container.querySelectorAll('input[data-field="buy_price"]').forEach(input => {
                 input.addEventListener('input', (e) => {
                     const id = e.target.dataset.id;
@@ -459,7 +558,7 @@
             if(window.lucide) window.lucide.createIcons();
         }
 
-        // --- المبادلات والأزرار ---
+        // --- باقي الأزرار والمبادلات (بدون تغيير) ---
         btnLogin.addEventListener('click', () => signIn(emailIn.value.trim(), passIn.value));
         
         btnGuest.addEventListener('click', () => {
@@ -474,20 +573,39 @@
         });
 
         btnAddCurrency.addEventListener('click', async () => {
-             const body = { code: newCodeCurrency.value.trim(), name: newNameCurrency.value.trim(), unit: '1', buy_price: parseFloat(newBuyCurrency.value) || 0, sell_price: parseFloat(newSellCurrency.value) || 0 };
+             // إضافة بالإعدادات الافتراضية (نسبة 0.006)
+             const body = { 
+                 code: newCodeCurrency.value.trim(), 
+                 name: newNameCurrency.value.trim(), 
+                 unit: '1', 
+                 buy_price: parseFloat(newBuyCurrency.value) || 0, 
+                 sell_price: parseFloat(newSellCurrency.value) || 0,
+                 calc_mode: 'percent',
+                 calc_margin: 0.006 
+             };
              await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_CURRENCY}`, { method: 'POST', headers: { 'apikey': ANON_KEY, 'Authorization': getAuthHeader(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
              loadAll();
         });
 
         btnAddGold.addEventListener('click', async () => {
-            const body = { purity: parseInt(newPurityGold.value) || 0, description: newDescGold.value.trim(), unit: 'gram', buy_price: parseFloat(newBuyGold.value) || 0, sell_price: parseFloat(newSellGold.value) || 0 };
+            const isOunce = newDescGold.value.includes('أونصة');
+            const defaultMargin = isOunce ? 0.0012 : 0.006;
+            
+            const body = { 
+                purity: parseInt(newPurityGold.value) || 0, 
+                description: newDescGold.value.trim(), 
+                unit: 'gram', 
+                buy_price: parseFloat(newBuyGold.value) || 0, 
+                sell_price: parseFloat(newSellGold.value) || 0,
+                calc_mode: 'percent',
+                calc_margin: defaultMargin
+            };
             await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_GOLD}`, { method: 'POST', headers: { 'apikey': ANON_KEY, 'Authorization': getAuthHeader(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             loadAll();
         });
 
         btnRefresh.addEventListener('click', loadAll);
         
-        // تسجيل الخروج (مسح كل شيء)
         btnLogout.addEventListener('click', () => { 
             localStorage.removeItem('supabase_access_token'); 
             localStorage.removeItem('supabase_refresh_token'); 
@@ -508,20 +626,14 @@
             });
         });
 
-        // --- بدء تشغيل التطبيق (مع محاولة استعادة الجلسة) ---
         (async function initApp() {
             if (window.lucide) window.lucide.createIcons();
-            
-            // هل توجد بيانات دخول محفوظة؟
             if (accessToken && userEmail) {
-                // نحاول تجديد التوكن للتأكد من صلاحيته
                 const isValid = await refreshSession();
-                
                 if (isValid) {
                     setLoggedInUI(userEmail);
                     await loadAll();
                 } else {
-                    // التوكن منتهي الصلاحية ولا يمكن تجديده
                     localStorage.removeItem('supabase_access_token');
                     localStorage.removeItem('supabase_refresh_token');
                     localStorage.removeItem('supabase_user_email');
@@ -530,7 +642,6 @@
                     mainUI.classList.add('hidden');
                 }
             } else {
-                // لا يوجد دخول سابق
                 loginBox.classList.remove('hidden');
                 mainUI.classList.add('hidden');
             }
