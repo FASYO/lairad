@@ -12,7 +12,7 @@
     <style>
         body {
             font-family: 'Cairo', sans-serif;
-            background-color: #f1f5f9; /* لون خلفية أهدأ */
+            background-color: #f1f5f9;
             -webkit-tap-highlight-color: transparent;
             color: #1e293b;
         }
@@ -32,6 +32,15 @@
         
         .fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Toast Animation */
+        .toast-enter { transform: translateY(100%); opacity: 0; }
+        .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .toast-exit { transform: translateY(0); opacity: 1; }
+        .toast-exit-active { transform: translateY(100%); opacity: 0; transition: all 0.4s ease-in; }
 
         /* Inputs Styling */
         .input-base {
@@ -78,6 +87,8 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
+    <div id="toast-container" class="fixed bottom-24 lg:bottom-20 left-1/2 -translate-x-1/2 z-[60] pointer-events-none flex flex-col items-center gap-2 w-full max-w-sm px-4"></div>
+
     <div id="auth-section" class="min-h-screen flex items-center justify-center p-6 bg-slate-900 relative overflow-hidden">
         <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4"></div>
         <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/4"></div>
@@ -108,11 +119,12 @@
         </div>
     </div>
 
-    <div id="main-ui" class="hidden max-w-md mx-auto w-full pb-28 fade-in">
-        <div class="bg-slate-900 text-white p-6 pb-12 rounded-b-4xl shadow-2xl relative overflow-hidden z-20">
+    <div id="main-ui" class="hidden w-full max-w-md lg:max-w-7xl mx-auto pb-28 fade-in">
+        
+        <div class="bg-slate-900 text-white p-6 pb-16 lg:pb-24 rounded-b-4xl shadow-2xl relative overflow-hidden z-20">
             <div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
             
-            <div class="relative z-10 flex justify-between items-center mb-6">
+            <div class="relative z-10 flex justify-between items-center mb-8">
                 <div>
                     <h2 class="text-xl font-black flex items-center gap-2 tracking-tight">
                         <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
@@ -126,20 +138,20 @@
                 </div>
             </div>
             
-            <div class="flex p-1 bg-slate-800/50 rounded-2xl backdrop-blur-md relative z-10 border border-white/5">
+            <div class="max-w-md mx-auto lg:max-w-lg flex p-1 bg-slate-800/50 rounded-2xl backdrop-blur-md relative z-10 border border-white/5">
                 <button class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all tab-btn bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" data-target="currencies">العملات</button>
                 <button class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all tab-btn text-slate-400 hover:text-white" data-target="gold">الذهب</button>
             </div>
         </div>
 
-        <div class="px-4 -mt-6 relative z-10 space-y-8">
+        <div class="px-4 lg:px-8 -mt-8 lg:-mt-12 relative z-10 space-y-8">
             
             <div id="panel-currencies" class="panel space-y-4">
-                <div class="bg-white p-5 rounded-3xl shadow-lg shadow-slate-200/50 border border-slate-100">
-                    <h3 class="font-bold text-slate-700 text-xs mb-3 flex items-center gap-1.5">
+                <div class="bg-white p-5 lg:p-6 rounded-3xl shadow-lg shadow-slate-200/50 border border-slate-100 max-w-4xl mx-auto w-full">
+                    <h3 class="font-bold text-slate-700 text-xs mb-4 flex items-center gap-1.5">
                         <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-500"></i> إضافة عملة جديدة
                     </h3>
-                    <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4">
                         <input id="new-code-currency" placeholder="الرمز (USD)" class="bg-slate-50 p-3 rounded-xl text-xs font-bold border-0 ring-1 ring-slate-100 focus:ring-emerald-500 outline-none transition-all placeholder:font-normal">
                         <input id="new-name-currency" placeholder="الاسم (دولار)" class="bg-slate-50 p-3 rounded-xl text-xs font-bold border-0 ring-1 ring-slate-100 focus:ring-emerald-500 outline-none transition-all placeholder:font-normal">
                         <input id="new-sell-currency" placeholder="سعر المبيع" type="number" class="bg-red-50 p-3 rounded-xl text-xs border-0 ring-1 ring-red-100 focus:ring-red-400 outline-none num-en font-black text-red-600 placeholder:font-normal placeholder:text-red-200">
@@ -147,15 +159,16 @@
                     </div>
                     <button id="btn-add-currency" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold text-xs hover:bg-slate-900 active:scale-[0.98] transition shadow-lg shadow-slate-300/50">إضافة للقائمة</button>
                 </div>
-                <div id="rates-body-currency" class="space-y-4 pb-4"></div>
+                
+                <div id="rates-body-currency" class="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 pb-4"></div>
             </div>
 
             <div id="panel-gold" class="panel hidden space-y-4">
-                <div class="bg-white p-5 rounded-3xl shadow-lg shadow-slate-200/50 border border-slate-100">
-                    <h3 class="font-bold text-slate-700 text-xs mb-3 flex items-center gap-1.5">
+                <div class="bg-white p-5 lg:p-6 rounded-3xl shadow-lg shadow-slate-200/50 border border-slate-100 max-w-4xl mx-auto w-full">
+                    <h3 class="font-bold text-slate-700 text-xs mb-4 flex items-center gap-1.5">
                         <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-amber-500"></i> إضافة صنف ذهب
                     </h3>
-                    <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4">
                         <input id="new-purity-gold" type="number" placeholder="عيار (21)" class="bg-slate-50 p-3 rounded-xl text-xs font-bold border-0 ring-1 ring-slate-100 focus:ring-emerald-500 outline-none num-en placeholder:font-normal">
                         <input id="new-desc-gold" placeholder="الوصف (أونصة)" class="bg-slate-50 p-3 rounded-xl text-xs font-bold border-0 ring-1 ring-slate-100 focus:ring-emerald-500 outline-none transition-all placeholder:font-normal">
                         <input id="new-sell-gold" placeholder="سعر المبيع" type="number" class="bg-red-50 p-3 rounded-xl text-xs border-0 ring-1 ring-red-100 focus:ring-red-400 outline-none num-en font-black text-red-600 placeholder:font-normal placeholder:text-red-200">
@@ -163,15 +176,23 @@
                     </div>
                     <button id="btn-add-gold" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold text-xs hover:bg-slate-900 active:scale-[0.98] transition shadow-lg shadow-slate-300/50">إضافة للقائمة</button>
                 </div>
-                <div id="rates-body-gold" class="space-y-4 pb-4"></div>
+                
+                <div id="rates-body-gold" class="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 pb-4"></div>
             </div>
         </div>
 
-        <div class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-white/50 p-3 flex justify-between px-6 items-center z-50 rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.03)] max-w-md mx-auto">
-            <div class="flex items-center gap-2">
+        <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200/60 p-3 flex justify-between px-6 items-center z-50 rounded-t-3xl shadow-[0_-5px_30px_rgba(0,0,0,0.06)] w-full max-w-md lg:max-w-7xl mx-auto transition-all">
+            
+            <div class="flex items-center gap-3">
                 <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                 <span id="last-updated" class="text-[10px] font-bold text-slate-400 tracking-wide">...</span>
             </div>
+
+            <button id="btn-save-all" class="hidden absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 bg-slate-900 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-xl shadow-slate-300/50 flex items-center gap-2 transition-all slide-up active:scale-95">
+                <i data-lucide="save-all" class="w-4 h-4"></i>
+                <span id="save-all-text">حفظ الكل</span>
+            </button>
+
             <div id="status" class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all bg-emerald-100 text-emerald-700">متصل</div>
         </div>
     </div>
@@ -197,6 +218,10 @@
         const btnRefresh = document.getElementById('btn-refresh');
         const btnLogout = document.getElementById('btn-logout');
         
+        // Save All Elements
+        const btnSaveAll = document.getElementById('btn-save-all');
+        const txtSaveAll = document.getElementById('save-all-text');
+
         // Add Inputs
         const newSellCurrency = document.getElementById('new-sell-currency');
         const newBuyCurrency = document.getElementById('new-buy-currency');
@@ -213,6 +238,41 @@
         let userEmail = localStorage.getItem('supabase_user_email');
         let cacheCurrency = [];
         let cacheGold = [];
+
+        // Track modified IDs
+        let modifiedItems = {
+            currency: new Set(),
+            gold: new Set()
+        };
+
+        /* ========== UI UTILS: Toast & Feedback ========== */
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-slate-900' : 'bg-red-500';
+            const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+            
+            toast.className = `${bgColor} text-white px-5 py-3.5 rounded-2xl shadow-2xl shadow-slate-500/20 flex items-center gap-3 text-xs font-bold tracking-wide backdrop-blur-md toast-enter`;
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-4 h-4 ${type==='success'?'text-emerald-400':'text-white'}"></i>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            if(window.lucide) window.lucide.createIcons();
+            
+            requestAnimationFrame(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-enter-active');
+            });
+
+            setTimeout(() => {
+                toast.classList.remove('toast-enter-active');
+                toast.classList.add('toast-exit-active');
+                setTimeout(() => toast.remove(), 400);
+            }, 2500);
+        }
 
         /* ========== LOGIC: Authentication ========== */
         function setLoggedInUI(email){
@@ -292,11 +352,9 @@
             } else {
                 result = sellPrice * (1 - margin);
             }
-            // Ensure we don't return negative numbers accidentally
             return Math.max(0, Math.round(result));
         }
 
-        // Init calc listeners
         newSellCurrency.addEventListener('input', () => {
             const val = parseFloat(newSellCurrency.value);
             newBuyCurrency.value = val ? calculateBuyPrice(val, 'percent', 0.006) : '';
@@ -310,6 +368,18 @@
 
         /* ========== LOGIC: Data Handling ========== */
         function getAuthHeader() { return accessToken ? `Bearer ${accessToken}` : `Bearer ${ANON_KEY}`; }
+
+        function updateSaveAllUI() {
+            const count = modifiedItems.currency.size + modifiedItems.gold.size;
+            if (count > 0) {
+                btnSaveAll.classList.remove('hidden');
+                txtSaveAll.textContent = `حفظ الكل (${count})`;
+                document.getElementById('last-updated').classList.add('hidden'); // Hide time to make space on mobile
+            } else {
+                btnSaveAll.classList.add('hidden');
+                document.getElementById('last-updated').classList.remove('hidden');
+            }
+        }
 
         async function loadAll(){
             statusDiv.textContent = 'جاري التزامن...';
@@ -326,13 +396,17 @@
                 cacheCurrency = await rCur.json();
                 cacheGold = await rGold.json();
 
-                // Defaults if null
                 const cleanData = (arr) => arr.forEach(r => {
                     if(!r.calc_mode) r.calc_mode = 'percent';
                     if(r.calc_margin == null) r.calc_margin = 0.006;
                 });
                 cleanData(cacheCurrency);
                 cleanData(cacheGold);
+                
+                // Clear modified tracking on reload
+                modifiedItems.currency.clear();
+                modifiedItems.gold.clear();
+                updateSaveAllUI();
 
                 renderCurrency();
                 renderGold();
@@ -348,17 +422,21 @@
             }
         }
         
-        async function saveItem(id, table) {
+        // Single Item Save
+        async function saveItem(id, table, isBatch = false) {
             const cache = table === TABLE_CURRENCY ? cacheCurrency : cacheGold;
             const row = cache.find(r => r.id == id);
-            const btn = document.querySelector(`button[data-id="${id}"][data-act="save"]`);
             
-            if (!row || !accessToken) return;
-
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="animate-spin" data-lucide="loader-2"></i>';
-            btn.disabled = true;
-            if(window.lucide) window.lucide.createIcons();
+            // If batch, we don't manipulate button UI here
+            const btn = document.querySelector(`button[data-id="${id}"][data-act="save"]`);
+            const originalContent = '<i data-lucide="save" class="w-3 h-3"></i> <span>حفظ التعديلات</span>'; 
+            const originalClass = "bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-xs hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200 flex items-center gap-2";
+            
+            if (!isBatch && btn) {
+                btn.innerHTML = '<i class="animate-spin" data-lucide="loader-2"></i>';
+                btn.disabled = true;
+                if(window.lucide) window.lucide.createIcons();
+            }
 
             try {
                 const body = { 
@@ -379,25 +457,101 @@
                 });
 
                 if (response.ok) {
-                    btn.innerHTML = '<i data-lucide="check"></i> تم';
-                    btn.className = "w-12 h-12 flex items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 transition-all";
+                    // Success Visuals
+                    if (btn) {
+                        btn.innerHTML = '<i data-lucide="check"></i> تم الحفظ';
+                        btn.className = "bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg shadow-emerald-500/30 flex items-center gap-2 transition-all";
+                        
+                        const card = btn.closest('.group');
+                        if(card) {
+                             const unsavedBtn = card.querySelector('button[data-act="save"]');
+                             unsavedBtn.classList.remove('ring-2', 'ring-emerald-400', 'ring-offset-2');
+                        }
+                    }
+
+                    // Remove from modified set
+                    const type = table === TABLE_CURRENCY ? 'currency' : 'gold';
+                    modifiedItems[type].delete(id.toString());
+                    updateSaveAllUI();
+
+                    if (!isBatch) {
+                        showToast('تم حفظ التعديلات بنجاح');
+                        setTimeout(() => {
+                            if(btn) {
+                                btn.innerHTML = originalContent;
+                                btn.className = originalClass;
+                                btn.disabled = false;
+                                if(window.lucide) window.lucide.createIcons();
+                            }
+                        }, 2000);
+                    }
+                    return true;
                 } else {
                     throw new Error("Save failed");
                 }
             } catch(e) { 
-                btn.innerHTML = '<i data-lucide="x"></i>';
-                btn.className = "w-12 h-12 flex items-center justify-center rounded-2xl bg-red-500 text-white shadow-lg shadow-red-500/30 transition-all";
-                setTimeout(() => loadAll(), 2000); // Revert on error
+                if (!isBatch && btn) {
+                    btn.innerHTML = '<i data-lucide="x"></i> خطأ';
+                    btn.className = "bg-red-500 text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg shadow-red-500/30 flex items-center gap-2 transition-all";
+                    showToast('حدث خطأ أثناء الحفظ', 'error');
+                    setTimeout(() => {
+                        btn.innerHTML = originalContent;
+                        btn.className = originalClass;
+                        btn.disabled = false;
+                        loadAll(); 
+                    }, 2000);
+                }
+                return false;
             } finally {
-                if(window.lucide) window.lucide.createIcons();
-                setTimeout(() => {
-                    if(!btn.innerHTML.includes('check')) { // If not success state, revert logic handled by reload or manual reset
-                    }
-                    // Keep the success state for a bit or reload? 
-                    // Let's just reload to be safe and sync
-                    loadAll();
-                }, 1000);
+                if(!isBatch && window.lucide) window.lucide.createIcons();
             }
+        }
+
+        // --- Save All Logic ---
+        async function saveAll() {
+            const originalText = txtSaveAll.textContent;
+            txtSaveAll.textContent = "جاري الحفظ...";
+            btnSaveAll.disabled = true;
+            btnSaveAll.classList.add('opacity-80', 'cursor-not-allowed');
+
+            const promises = [];
+
+            // Collect all save promises
+            modifiedItems.currency.forEach(id => {
+                promises.push(saveItem(id, TABLE_CURRENCY, true));
+            });
+            modifiedItems.gold.forEach(id => {
+                promises.push(saveItem(id, TABLE_GOLD, true));
+            });
+
+            const results = await Promise.all(promises);
+            const allSuccess = results.every(r => r === true);
+
+            if (allSuccess) {
+                showToast(`تم حفظ ${results.length} بطاقة بنجاح`);
+            } else {
+                showToast('تم الحفظ مع وجود بعض الأخطاء', 'error');
+            }
+
+            // Reset UI for Save All Button
+            txtSaveAll.textContent = originalText;
+            btnSaveAll.disabled = false;
+            btnSaveAll.classList.remove('opacity-80', 'cursor-not-allowed');
+            
+            // Reset individual buttons visually after batch save
+            setTimeout(() => {
+                document.querySelectorAll('button[data-act="save"]').forEach(btn => {
+                    if(btn.innerHTML.includes('تم الحفظ')) {
+                        btn.innerHTML = '<i data-lucide="save" class="w-3 h-3"></i> <span>حفظ التعديلات</span>'; 
+                        btn.className = "bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-xs hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200 flex items-center gap-2";
+                        btn.disabled = false;
+                    }
+                });
+                if(window.lucide) window.lucide.createIcons();
+            }, 2000);
+
+            // If some failed, reload to ensure consistency
+            if(!allSuccess) loadAll();
         }
 
         async function deleteItem(id, table) {
@@ -407,6 +561,13 @@
                     method: 'DELETE', 
                     headers: { 'apikey': ANON_KEY, 'Authorization': getAuthHeader() } 
                 });
+                
+                // Remove from local cache tracking if it was there
+                const type = table === TABLE_CURRENCY ? 'currency' : 'gold';
+                modifiedItems[type].delete(id.toString());
+                updateSaveAllUI();
+
+                showToast('تم حذف العنصر');
                 loadAll();
             } catch(e) { alert('فشل الحذف'); }
         }
@@ -473,15 +634,15 @@
         
         function renderCurrency(){
             ratesBodyCurrency.innerHTML = cacheCurrency.map(r => createCardHTML(r, 'currency')).join('');
-            attachInteractions(ratesBodyCurrency, cacheCurrency);
+            attachInteractions(ratesBodyCurrency, cacheCurrency, 'currency');
         }
 
         function renderGold(){
             ratesBodyGold.innerHTML = cacheGold.map(r => createCardHTML(r, 'gold')).join('');
-            attachInteractions(ratesBodyGold, cacheGold);
+            attachInteractions(ratesBodyGold, cacheGold, 'gold');
         }
 
-        function attachInteractions(container, cacheSource) {
+        function attachInteractions(container, cacheSource, type) {
             
             const updateRowCalculation = (id) => {
                 const row = cacheSource.find(r => r.id == id);
@@ -495,9 +656,13 @@
 
             const markUnsaved = (id, container) => {
                 const btn = container.querySelector(`button[data-id="${id}"][data-act="save"]`);
-                if(btn && !btn.classList.contains('bg-emerald-600')) { // Visual cue
+                if(btn && !btn.classList.contains('bg-emerald-500')) { 
                     btn.classList.add('ring-2', 'ring-emerald-400', 'ring-offset-2');
                 }
+                
+                // Track Change globally
+                modifiedItems[type].add(id.toString());
+                updateSaveAllUI();
             };
 
             // Inputs
@@ -508,7 +673,7 @@
                     const row = cacheSource.find(r => r.id == id);
                     if (row) {
                         row[field] = parseFloat(e.target.value) || 0;
-                        if(field !== 'buy_price') updateRowCalculation(id); // Only auto-calc if not editing buy price directly
+                        if(field !== 'buy_price') updateRowCalculation(id); 
                         else markUnsaved(id, container);
                     }
                 });
@@ -547,12 +712,14 @@
 
         // --- Initialization ---
         btnLogin.addEventListener('click', () => signIn(emailIn.value.trim(), passIn.value));
-        
+        btnSaveAll.addEventListener('click', saveAll);
+
         btnAddCurrency.addEventListener('click', async () => {
              const body = { code: newCodeCurrency.value.trim(), name: newNameCurrency.value.trim(), unit: '1', buy_price: 0, sell_price: 0, calc_mode: 'percent', calc_margin: 0.006 };
              if(!body.code) return alert('الرمز مطلوب');
              await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_CURRENCY}`, { method: 'POST', headers: { 'apikey': ANON_KEY, 'Authorization': getAuthHeader(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
              loadAll();
+             showToast('تمت إضافة العملة');
         });
 
         btnAddGold.addEventListener('click', async () => {
@@ -561,9 +728,13 @@
             if(!body.description) return alert('الوصف مطلوب');
             await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_GOLD}`, { method: 'POST', headers: { 'apikey': ANON_KEY, 'Authorization': getAuthHeader(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             loadAll();
+            showToast('تمت إضافة صنف الذهب');
         });
 
-        btnRefresh.addEventListener('click', loadAll);
+        btnRefresh.addEventListener('click', () => {
+            loadAll();
+            showToast('تم تحديث البيانات');
+        });
         
         btnLogout.addEventListener('click', () => { 
             localStorage.removeItem('supabase_access_token'); 
