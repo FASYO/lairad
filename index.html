@@ -12,7 +12,7 @@
     <style>
         body {
             font-family: 'Cairo', sans-serif;
-            background-color: #f1f5f9;
+            background-color: #f8fafc; /* لون خلفية أفتح قليلاً لتباين أفضل */
             -webkit-tap-highlight-color: transparent;
             color: #1e293b;
         }
@@ -121,10 +121,10 @@
 
     <div id="main-ui" class="hidden w-full max-w-md lg:max-w-7xl mx-auto pb-28 fade-in">
         
-        <div class="bg-slate-900 text-white p-6 pb-16 lg:pb-24 rounded-b-4xl shadow-2xl relative overflow-hidden z-20">
+        <div class="bg-slate-900 text-white p-6 rounded-b-4xl shadow-2xl relative overflow-hidden z-20">
             <div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
             
-            <div class="relative z-10 flex justify-between items-center mb-8">
+            <div class="relative z-10 flex justify-between items-center mb-6">
                 <div>
                     <h2 class="text-xl font-black flex items-center gap-2 tracking-tight">
                         <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
@@ -144,37 +144,93 @@
             </div>
         </div>
 
-        <div class="px-4 lg:px-8 -mt-8 lg:-mt-12 relative z-10 space-y-8">
+        <div class="px-4 lg:px-8 mt-6 relative z-10 space-y-8">
             
-            <div id="panel-currencies" class="panel space-y-4">
-                <div class="bg-white p-5 lg:p-6 rounded-3xl shadow-lg shadow-slate-200/50 border border-slate-100 max-w-4xl mx-auto w-full">
-                    <h3 class="font-bold text-slate-700 text-xs mb-4 flex items-center gap-1.5">
-                        <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-500"></i> إضافة عملة جديدة
-                    </h3>
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4">
-                        <input id="new-code-currency" placeholder="الرمز (USD)" class="bg-slate-50 p-3 rounded-xl text-xs font-bold border-0 ring-1 ring-slate-100 focus:ring-emerald-500 outline-none transition-all placeholder:font-normal">
-                        <input id="new-name-currency" placeholder="الاسم (دولار)" class="bg-slate-50 p-3 rounded-xl text-xs font-bold border-0 ring-1 ring-slate-100 focus:ring-emerald-500 outline-none transition-all placeholder:font-normal">
-                        <input id="new-sell-currency" placeholder="سعر المبيع" type="number" class="bg-red-50 p-3 rounded-xl text-xs border-0 ring-1 ring-red-100 focus:ring-red-400 outline-none num-en font-black text-red-600 placeholder:font-normal placeholder:text-red-200">
-                        <input id="new-buy-currency" placeholder="شراء (آلي)" type="number" readonly class="bg-slate-50 p-3 rounded-xl text-xs text-slate-400 outline-none num-en font-bold cursor-default">
+            <div id="panel-currencies" class="panel space-y-6">
+                
+                <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 max-w-4xl mx-auto w-full overflow-hidden group">
+                    <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-teal-400"></div>
+                    
+                    <div class="p-5 lg:p-6">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">إضافة عملة جديدة</h3>
+                                <p class="text-[10px] text-slate-400 font-medium">أدخل بيانات العملة ليتم إدراجها فوراً</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 mb-1 block">رمز العملة</label>
+                                <input id="new-code-currency" placeholder="مثال: USD" class="w-full bg-slate-50 p-3.5 rounded-xl text-xs font-bold border border-slate-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all placeholder:font-normal">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 mb-1 block">اسم العملة</label>
+                                <input id="new-name-currency" placeholder="مثال: دولار أمريكي" class="w-full bg-slate-50 p-3.5 rounded-xl text-xs font-bold border border-slate-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all placeholder:font-normal">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-red-400 mb-1 block">سعر المبيع</label>
+                                <input id="new-sell-currency" placeholder="0" type="number" class="w-full bg-red-50 p-3.5 rounded-xl text-xs border border-red-100 focus:border-red-400 focus:ring-1 focus:ring-red-400 outline-none num-en font-black text-red-600 placeholder:font-normal placeholder:text-red-200">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-emerald-400 mb-1 block">الشراء (محسوب)</label>
+                                <input id="new-buy-currency" placeholder="0" type="number" readonly class="w-full bg-slate-100 p-3.5 rounded-xl text-xs text-slate-500 outline-none num-en font-bold cursor-default border border-transparent">
+                            </div>
+                        </div>
+                        
+                        <button id="btn-add-currency" class="w-full bg-slate-800 text-white py-3.5 rounded-xl font-bold text-xs hover:bg-slate-900 active:scale-[0.98] transition shadow-lg shadow-slate-300/50 flex items-center justify-center gap-2">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            <span>إضافة للقائمة</span>
+                        </button>
                     </div>
-                    <button id="btn-add-currency" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold text-xs hover:bg-slate-900 active:scale-[0.98] transition shadow-lg shadow-slate-300/50">إضافة للقائمة</button>
                 </div>
                 
                 <div id="rates-body-currency" class="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 pb-4"></div>
             </div>
 
-            <div id="panel-gold" class="panel hidden space-y-4">
-                <div class="bg-white p-5 lg:p-6 rounded-3xl shadow-lg shadow-slate-200/50 border border-slate-100 max-w-4xl mx-auto w-full">
-                    <h3 class="font-bold text-slate-700 text-xs mb-4 flex items-center gap-1.5">
-                        <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-amber-500"></i> إضافة صنف ذهب
-                    </h3>
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4">
-                        <input id="new-purity-gold" type="number" placeholder="عيار (21)" class="bg-slate-50 p-3 rounded-xl text-xs font-bold border-0 ring-1 ring-slate-100 focus:ring-emerald-500 outline-none num-en placeholder:font-normal">
-                        <input id="new-desc-gold" placeholder="الوصف (أونصة)" class="bg-slate-50 p-3 rounded-xl text-xs font-bold border-0 ring-1 ring-slate-100 focus:ring-emerald-500 outline-none transition-all placeholder:font-normal">
-                        <input id="new-sell-gold" placeholder="سعر المبيع" type="number" class="bg-red-50 p-3 rounded-xl text-xs border-0 ring-1 ring-red-100 focus:ring-red-400 outline-none num-en font-black text-red-600 placeholder:font-normal placeholder:text-red-200">
-                        <input id="new-buy-gold" placeholder="شراء (آلي)" type="number" readonly class="bg-slate-50 p-3 rounded-xl text-xs text-slate-400 outline-none num-en font-bold cursor-default">
+            <div id="panel-gold" class="panel hidden space-y-6">
+                
+                <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 max-w-4xl mx-auto w-full overflow-hidden group">
+                    <div class="h-1.5 w-full bg-gradient-to-r from-amber-500 to-yellow-400"></div>
+                    
+                    <div class="p-5 lg:p-6">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">إضافة صنف ذهب</h3>
+                                <p class="text-[10px] text-slate-400 font-medium">أدخل تفاصيل العيار أو القطعة الذهبية</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 mb-1 block">العيار</label>
+                                <input id="new-purity-gold" type="number" placeholder="مثال: 21" class="w-full bg-slate-50 p-3.5 rounded-xl text-xs font-bold border border-slate-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none num-en placeholder:font-normal">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 mb-1 block">الوصف</label>
+                                <input id="new-desc-gold" placeholder="مثال: أونصة" class="w-full bg-slate-50 p-3.5 rounded-xl text-xs font-bold border border-slate-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all placeholder:font-normal">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-red-400 mb-1 block">سعر المبيع</label>
+                                <input id="new-sell-gold" placeholder="0" type="number" class="w-full bg-red-50 p-3.5 rounded-xl text-xs border border-red-100 focus:border-red-400 focus:ring-1 focus:ring-red-400 outline-none num-en font-black text-red-600 placeholder:font-normal placeholder:text-red-200">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-emerald-400 mb-1 block">الشراء (محسوب)</label>
+                                <input id="new-buy-gold" placeholder="0" type="number" readonly class="w-full bg-slate-100 p-3.5 rounded-xl text-xs text-slate-500 outline-none num-en font-bold cursor-default border border-transparent">
+                            </div>
+                        </div>
+
+                        <button id="btn-add-gold" class="w-full bg-slate-800 text-white py-3.5 rounded-xl font-bold text-xs hover:bg-slate-900 active:scale-[0.98] transition shadow-lg shadow-slate-300/50 flex items-center justify-center gap-2">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            <span>إضافة للقائمة</span>
+                        </button>
                     </div>
-                    <button id="btn-add-gold" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold text-xs hover:bg-slate-900 active:scale-[0.98] transition shadow-lg shadow-slate-300/50">إضافة للقائمة</button>
                 </div>
                 
                 <div id="rates-body-gold" class="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 pb-4"></div>
